@@ -44,7 +44,7 @@ private:
     Matrix  m_viewportMat;
     Matrix  m_mvpMat;
     mat<2, 3, float>    varying_uv;
-    mat<4, 4, float>    varying_tri;
+    mat<3, 3, float>    varying_tri;
     mat<3, 3, float>    varying_norm;
     mat<3, 3, float>    ndc_tri;
     

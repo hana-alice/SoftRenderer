@@ -47,9 +47,8 @@ Vec4f DepthShader::vertex(int face, int nthvert)
 {
     //varying_intensity[nthvert] = std::max(0.0f, m_model->normal(face, nthvert) * light_dir);
     m_mvpMat = m_projMat * m_viewMat * m_modelMat;
-	Vec4f gl_vertex = m_mvpMat * embed<4>(m_model->vert(face, nthvert));
-    Vec4f vpVerts = m_viewportMat * gl_vertex;
-	varying_tri.set_col(nthvert, proj<3>(vpVerts/vpVerts[3]));
+	Vec4f gl_vertex = m_viewportMat * m_mvpMat * embed<4>(m_model->vert(face, nthvert));
+	varying_tri.set_col(nthvert, proj<3>(gl_vertex/gl_vertex[3]));
     return gl_vertex;
 }
 

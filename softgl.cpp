@@ -7,7 +7,7 @@ namespace pipeline_impl
 
 void triangle(Vec4f* pts, IShader& shader, TGAImage& image, TGAImage& zbuffer, Model* md)
 {
-	std::for_each(pts, pts + 3, [&](Vec4f& pts) {pts = shader.getViewportMat() * pts; pts = pts / pts[3]; });
+	std::for_each(pts, pts + 3, [&](Vec4f& pts) { pts = pts / pts[3]; });
 
 	Vec2f bboxmin(std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
 	Vec2f bboxmax(-std::numeric_limits<float>::max(), -std::numeric_limits<float>::max());

@@ -144,7 +144,7 @@ int main(int argc, char** argv)
 	}
 	
 	image_front.write_tga_file("output.tga");
-	zbuffer.write_tga_file("zbuffer.tga");
+	image.write_tga_file("depth.tga");
 	delete model;
 	return 0;
 }

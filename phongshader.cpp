@@ -49,8 +49,8 @@ Vec4f PhongShader::vertex(int face, int nthvert)
     varying_uv.set_col(nthvert, m_model->uv(face, nthvert));
 	m_mvpMat = m_projMat * m_viewMat * m_modelMat;
 	varying_norm.set_col(nthvert, proj<3>(m_mvpMat.invert_transpose() * embed<4>(m_model->normal(face, nthvert),0.0f)));
-	Vec4f gl_vertex = m_mvpMat * embed<4>(m_model->vert(face, nthvert));
-	varying_tri.set_col(nthvert, gl_vertex);
+	Vec4f gl_vertex = m_viewportMat * m_mvpMat * embed<4>(m_model->vert(face, nthvert));
+	varying_tri.set_col(nthvert, proj<3>(gl_vertex/gl_vertex[3]));
 	ndc_tri.set_col(nthvert, proj<3>(gl_vertex/gl_vertex[3]) );
     return gl_vertex;
 }
@@ -72,8 +72,8 @@ bool PhongShader::fragment(Vec3f bar, TGAColor& color)
     #if 1
     //float intensity = varying_intensity * bar * 0.5;
     Vec2f uv = varying_uv * bar;
-	#if 0 //normal
-    Vec3f normal = proj<3>(m_mvpMat * embed<4>(m_model->normal(uv))).normalize();
+	#if 1 //normal
+    Vec3f normal = proj<3>(m_mvpMat.invert_transpose() * embed<4>(m_model->normal(uv))).normalize();
 	#else //tangent space
 	Vec3f bn = (varying_norm*bar).normalize();
 	mat<3, 3, float> A;
@@ -93,7 +93,7 @@ bool PhongShader::fragment(Vec3f bar, TGAColor& color)
 	Vec3f normal = (B*m_model->normal(uv)).normalize();
 	#endif
 
-    Vec4f pt_shadow = uniform_shadowSpaceMat.invert() * (varying_tri * embed<4>(bar));
+    Vec4f pt_shadow = uniform_shadowSpaceMat * (m_viewportMat * m_mvpMat).invert() * embed<4>(varying_tri * bar);
     pt_shadow = pt_shadow/pt_shadow[3];
     Vec3f light = proj<3>(m_mvpMat * embed<4>(light_dir, 0.0f)).normalize();
 	Vec3f reflect = (normal * 2.0f * (normal * light) - light).normalize();
@@ -104,11 +104,11 @@ bool PhongShader::fragment(Vec3f bar, TGAColor& color)
 	{
         if (m_shadowEnabled && m_depthBuffer)
         {
-            bool inShadow = pt_shadow[2] < m_depthBuffer[(int)pt_shadow[0] + (int)pt_shadow[1] * m_depthBufSize.first] ;
+            bool inShadow = pt_shadow[2] + 20 < (m_depthBuffer[(int)pt_shadow[0] + (int)pt_shadow[1] * m_depthBufSize.first]);
             if (inShadow)
-                color[i] = std::min(5.0f + color[i] * intensity * 0.3f, 255.0f);
+                color[i] = std::min(5.0f + color[i] * intensity * 0.4f, 255.0f);
             else
-                color[i] = std::min(5.0f + color[i] * (intensity + 0.6f * spec), 255.0f);
+                color[i] = std::min(5.0f + color[i] * (intensity + 0.6f * spec), 0.0f);
         }
 	}
     return false;
