@@ -88,8 +88,7 @@ void triangle(Vec2i *pts, TGAImage& image, TGAColor color)
 */
 int main(int argc, char** argv)
 {
-	
-    Model *model = new Model("C:/Users/zli13/Documents/zeqiang.li/sr/obj/diablo3_pose/diablo3_pose.obj");
+    Model *model = new Model("./obj/diablo3_pose/diablo3_pose.obj");
     //Model *model = new Model("C:/Users/zli13/Documents/zeqiang.li/sr/obj/4.obj");
 
 	Matrix lookAtMat_light = math::lookAt(light_dir, center, up);
@@ -144,7 +143,7 @@ int main(int argc, char** argv)
 	}
 	
 	image_front.write_tga_file("output.tga");
-	image.write_tga_file("depth.tga");
+	zbuffer.write_tga_file("depth.tga");
 	delete model;
 	return 0;
 }

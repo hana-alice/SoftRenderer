@@ -104,11 +104,12 @@ bool PhongShader::fragment(Vec3f bar, TGAColor& color)
 	{
         if (m_shadowEnabled && m_depthBuffer)
         {
-            bool inShadow = pt_shadow[2] + 20 < (m_depthBuffer[(int)pt_shadow[0] + (int)pt_shadow[1] * m_depthBufSize.first]);
+            //multi by 1.05 to avoid shadow zfighting
+            bool inShadow = pt_shadow[2] * 1.05 < (m_depthBuffer[(int)pt_shadow[0] + (int)pt_shadow[1] * m_depthBufSize.first]);
             if (inShadow)
                 color[i] = std::min(5.0f + color[i] * intensity * 0.4f, 255.0f);
             else
-                color[i] = std::min(5.0f + color[i] * (intensity + 0.6f * spec), 0.0f);
+                color[i] = std::min(5.0f + color[i] * (intensity + 0.6f * spec), 255.0f);
         }
 	}
     return false;

@@ -1,4 +1,4 @@
-#include "DepthShader.h"
+#include "depthshader.h"
 #include "model.h"
 #include "mathmatic.h"
 
