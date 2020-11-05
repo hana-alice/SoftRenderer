@@ -55,7 +55,7 @@ Vec4f DepthShader::vertex(int face, int nthvert)
 bool DepthShader::fragment(Vec3f bar, TGAColor& color)
 {
     Vec3f pt = varying_tri * bar;
-    color = TGAColor(255,255,255) * (pt.z/255.0f);
+    color = TGAColor(0,0,0);
     return false;
 
 }

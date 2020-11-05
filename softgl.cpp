@@ -5,7 +5,7 @@
 namespace pipeline_impl
 {
 
-void triangle(Vec4f* pts, IShader& shader, TGAImage& image, TGAImage& zbuffer, Model* md)
+void triangle(Vec4f* pts, IShader& shader, TGAImage& image, float* zbuffer, Model* md)
 {
 	std::for_each(pts, pts + 3, [&](Vec4f& pts) { pts = pts / pts[3]; });
 
@@ -39,7 +39,7 @@ void triangle(Vec4f* pts, IShader& shader, TGAImage& image, TGAImage& zbuffer, M
             float z = pts[0][2]*cross.x + pts[1][2]*cross.y + pts[2][2]*cross.z;
             float w = pts[0][3]*cross.x + pts[1][3]*cross.y + pts[2][3]*cross.z;
             float depth = std::max(0, std::min(255, int(z/w + 0.5)));
-			if (cross.x < 0 || cross.y < 0 || cross.z < 0 || zbuffer.get(p.x, p.y)[0] > depth)
+			if (cross.x < 0 || cross.y < 0 || cross.z < 0 || zbuffer[p.x + p.y * width] > depth)
 				continue;
 			/*
             p.z = 0;
@@ -73,7 +73,7 @@ void triangle(Vec4f* pts, IShader& shader, TGAImage& image, TGAImage& zbuffer, M
 			{
 				TGAColor color;
 				shader.fragment(cross, color);
-				zbuffer.set(p.x, p.y, TGAColor(depth));
+				zbuffer[p.x + p.y*width] = depth;
 				image.set(p.x, p.y, color);
 			}			
 		}

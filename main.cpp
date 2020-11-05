@@ -9,12 +9,9 @@
 const TGAColor white = TGAColor(255, 255, 255, 255);
 const TGAColor red = TGAColor(255, 0, 0, 255);
 const TGAColor green = TGAColor(0, 255, 0, 255);
-const int width  = 800;
-const int height = 800;
-const int depth = 255;
 
 Vec3f light_dir(1,1,1);
-Vec3f       eye(0,0,3);
+Vec3f       eye(1.2, -0.8,3);
 Vec3f    center(0,0,0);
 Vec3f        up(0,1,0);
 
@@ -86,19 +83,45 @@ void triangle(Vec2i *pts, TGAImage& image, TGAColor color)
 	}
 }
 */
+
+float maxElevationAngle(float* zbuffer, Vec2f p, Vec2f dir)
+{
+	float maxAngle = 0.0;
+	for (float t = 0; t < 1000; t++)
+	{
+		Vec2f curPt = p + dir * t;
+		if(curPt.x >= width || curPt.y >= height || curPt.x < 0 || curPt.y < 0)
+			return maxAngle;
+		Vec2f vec = p - curPt;
+		float distance = std::sqrt(vec.x * vec.x + vec.y * vec.y);
+		if (distance < 1.0f)
+			continue;
+		float elevation = zbuffer[(int)curPt.x + (int)curPt.y * width] - zbuffer[(int)p.x + (int)p.y * width];
+		elevation = elevation / 255.0f;
+		maxAngle = std::max(maxAngle, atanf(elevation/distance));
+		
+	}
+	return maxAngle;
+
+}
+
 int main(int argc, char** argv)
 {
     Model *model = new Model("./obj/diablo3_pose/diablo3_pose.obj");
     //Model *model = new Model("C:/Users/zli13/Documents/zeqiang.li/sr/obj/4.obj");
 
-	Matrix lookAtMat_light = math::lookAt(light_dir, center, up);
+	Matrix lookAtMat_light = math::lookAt(eye, center, up);
 	Matrix viewport_light = math::viewport(width/8, height/8, width*3/4, height*3/4);
-	Matrix projMat_light = math::projection( 0.0f );
+	Matrix projMat_light = math::projection( -1.0f / (eye-center).norm()  );
 	light_dir.normalize();
 
 	TGAImage image(width, height, TGAImage::RGB);
-	TGAImage zbuffer(width, height, TGAImage::GRAYSCALE);
-
+	float* zbuffer = new float[width * height];
+	for (size_t i = 0; i < width * height; i++)
+	{
+		zbuffer[i] = -std::numeric_limits<float>::max();
+	}
+	
 	pipeline_impl::DepthShader depthShader;
 	depthShader.setModel(model);
 	depthShader.setModelMat(Matrix::identity());
@@ -114,36 +137,34 @@ int main(int argc, char** argv)
 		}
 		pipeline_impl::triangle(screenCoords, depthShader, image, zbuffer, model);
 	}
-	//
-	Matrix lookAtMat = math::lookAt(eye, center, up);
-	Matrix viewport = math::viewport(width/8, height/8, width*3/4, height*3/4);
-	Matrix projMat = math::projection( -1.0f / (eye-center).norm() );
+	image.write_tga_file("depth.tga");
 
-
-	TGAImage image_front(width, height, TGAImage::RGB);
-	TGAImage zbuffer_front(width, height, TGAImage::GRAYSCALE);
-
-	pipeline_impl::PhongShader phongShader;
-	phongShader.setModel(model);
-	phongShader.setModelMat(Matrix::identity());
-	phongShader.setViewMat(lookAtMat);
-	phongShader.setProjectMat(projMat);
-	phongShader.setViewportMat(viewport);
-	phongShader.enableShadow(true);
-	phongShader.setDepthBuffer(zbuffer.get_width(), zbuffer.get_height(), zbuffer.buffer());
-	phongShader.uniform_shadowSpaceMat = viewport_light * projMat_light * lookAtMat_light;
-	for (int i = 0; i < model->nfaces(); i++)
+	//TGAImage frame(width, height, TGAImage::RGB);
+	for (int i = 0; i < width; i++)
 	{
-		Vec4f screenCoords[3];
-		for (int j = 0; j < 3; j++)
+		for (int j = 0; j < height; j++)
 		{
-			screenCoords[j] = phongShader.vertex(i, j);
+			if(zbuffer[i + j * width]/255.0f < -1e5)
+				continue;
+			float total  = 0;
+			//sum of visibility
+			for (float ang = 0; ang < M_PI * 2 - 1e-4; ang += M_PI_4)
+			{
+				total += M_PI_2 - maxElevationAngle(zbuffer, Vec2f(i, j), Vec2f(sin(ang), cos(ang)));
+			}
+			//average, M_PI_2 made it a factor
+			total /= M_PI_2 * 8;
+			total = pow(total, 100.0f);
+			image.set(i, j, TGAColor(total * 255, total * 255, total * 255));
+
 		}
-		pipeline_impl::triangle(screenCoords, phongShader, image_front, zbuffer_front, model);
+		
 	}
+
 	
-	image_front.write_tga_file("output.tga");
-	zbuffer.write_tga_file("depth.tga");
+	image.write_tga_file("output.tga");
+	//image.write_tga_file("depth.tga");
+	delete [] zbuffer;
 	delete model;
 	return 0;
 }
